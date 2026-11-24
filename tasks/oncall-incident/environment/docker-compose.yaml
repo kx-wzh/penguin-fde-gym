@@ -1,0 +1,18 @@
+services:
+  main:
+    command: ["/usr/local/bin/start-fde-task"]
+    environment:
+      FDEGYM_LLM_URL: ${FDEGYM_LLM_URL:-}
+      FDEGYM_MODEL: ${FDEGYM_MODEL:-deepseek/deepseek-v4-flash}
+    volumes:
+      - type: bind
+        source: ${FDEGYM_MODEL_KEY_FILE:-/dev/null}
+        target: /opt/fde-gym-private/openrouter_key
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "python3", "/usr/local/bin/check-fde-task-ready"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
