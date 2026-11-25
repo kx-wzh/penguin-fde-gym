@@ -1,5 +1,10 @@
 services:
   main:
+    build:
+      context: ../../..
+      dockerfile: tasks/campus-booking/environment/Dockerfile
+    security_opt:
+      - no-new-privileges:true
     command: ["/usr/local/bin/start-fde-task"]
     environment:
       FDEGYM_LLM_URL: ${FDEGYM_LLM_URL:-}

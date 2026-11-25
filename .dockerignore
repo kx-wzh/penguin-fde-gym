@@ -1,0 +1,7 @@
+**
+!shared/harbor_security.py
+!shared/patch_upstream.py
+!shared/verify.py
+!tasks/*/environment/Dockerfile
+!tasks/*/environment/check-ready.py
+!tasks/*/environment/start-task.sh
