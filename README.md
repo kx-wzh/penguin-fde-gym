@@ -12,7 +12,7 @@ The Docker builds fetch [FDE-Gym harness 1.3.0](https://github.com/deeplethe/fde
 
 ## Running a task (for agents)
 
-Check out the full commit in the Case statement. Use Docker with Compose v2, uv, and a PenguinHarness model configured in the host Project. The Docker daemon’s Linux kernel must support `CONFIG_NFT_FIB_INET` for Harbor’s outbound allowlist. Set `ADAPTER_DIR` to the shared adapter directory at the commit stated in the Case. The benchmark repository documents [model setup, adapter installation, and trial handling](https://github.com/Prism-Shadow/penguin-harness-benchmark/blob/b44bb87feba731a9e342a9054b2d8641f48e589c/README.md#running-a-task-for-agents).
+Check out the full commit in the Case statement. Use Docker with Compose v2, uv, and a PenguinHarness model configured in the host Project. Set `ADAPTER_DIR` to the shared adapter directory at the commit stated in the Case. The benchmark repository documents [model setup, adapter installation, and trial handling](https://github.com/Prism-Shadow/penguin-harness-benchmark/blob/b44bb87feba731a9e342a9054b2d8641f48e589c/README.md#running-a-task-for-agents).
 
 Before a full evaluation, the operator configures the FDE-Gym simulator separately on the machine running PenguinHarness and Harbor. For example, with DeepSeek's API:
 
@@ -24,19 +24,15 @@ export FDEGYM_MODEL_KEY_FILE=/absolute/private/path/to/deepseek.key
 
 The key file contains the key on one line and should have mode `0600`. Keep it outside the checkouts and logs. Compose reads the host path and mounts the file read-only in the container's private FDE-Gym directory. Set these variables before starting the PenguinHarness service when using the Evaluation Center. For OpenRouter, use its Chat Completions endpoint and model ID instead. Record the simulator endpoint and model alongside the tested agent and its model.
 
-Run the Case's command from this repository root. Resolve the tested model provider host through the shared adapter as described in the benchmark run rules. The launch also uses `python3 shared/simulator-host.py` to get the simulator hostname from the same URL Compose reads. Pass it to Harbor for the baseline and agent phases. The baseline also allows the Node.js and npm distribution hosts for adapter installation. The agent phase allows the two configured model hosts and retains access to the local FDE-Gym services.
+Run the Case's command from this repository root. Agent containers use Harbor's default outbound networking. The upstream examples publish their grading sources and reference facts.
 
 For a direct run, set `MODEL` to the tested provider/model pair, `PENGUIN_VERSION` to the host CLI version, `TASK` to the Harbor task directory name, and `JOBS_DIR` and `JOB_NAME` to a new job location. Use the host Project and model configuration described in the benchmark run rules.
 
 ```bash
-MODEL_HOST="$(uvx --from harbor==0.23.0 python "$ADAPTER_DIR/agent_host.py" -m "$MODEL")" &&
-SIMULATOR_HOST="$(python3 shared/simulator-host.py)" &&
 PYTHONPATH="$ADAPTER_DIR" uvx --from harbor==0.23.0 harbor run -p tasks -i "$TASK" \
   -a penguin_agent:PenguinAgent -m "$MODEL" \
   --ak thinking=max --ak penguin_version="$PENGUIN_VERSION" \
   --ak run_timeout=15m --ak max_turns=60 \
-  --allow-agent-host "$MODEL_HOST" --allow-agent-host "$SIMULATOR_HOST" \
-  --allow-environment-host "$SIMULATOR_HOST" \
   --agent-setup-timeout-multiplier 2.5 -k 1 -n 1 --job-name "$JOB_NAME" -o "$JOBS_DIR" -y
 ```
 
@@ -54,9 +50,7 @@ uvx --from harbor==0.23.0 harbor run -p tasks -i robot-cell-rollout -a nop -k 1 
 A no-op run of `campus-booking` still needs the simulator configuration. Its verifier uses the simulator to generate customer replies.
 
 ```bash
-SIMULATOR_HOST="$(python3 shared/simulator-host.py)" &&
-uvx --from harbor==0.23.0 harbor run -p tasks -i campus-booking -a nop \
-  --allow-environment-host "$SIMULATOR_HOST" -k 1 -n 1 -y
+uvx --from harbor==0.23.0 harbor run -p tasks -i campus-booking -a nop -k 1 -n 1 -y
 ```
 
 The host UID running Harbor must differ from the two container task UIDs (10001 and 10002 when using rootful Docker). The verifier protects the mounted output directory and grades regular files and directories in the delivered workspace. Deliveries that contain symlinks, hard links, or special files fail validation before replay.
